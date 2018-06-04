@@ -45,6 +45,20 @@ def scrapGithubProfilesFromLocation():
     except ValueError as e:
         return 'Failed to scrapGithubProfilesFromLocation {0}'.format(e)
 
+@app.route("/scrap_github_users_repositories_skills", methods=["POST"])
+def scrapGithubUsersRepositoriesSkills():
+    try:
+        inputUtils = InputUtils()
+
+        token = request.headers.get("access_token")
+        location = inputUtils.getCleanString(request.form["location"])
+
+        scrapingController = ScrapingController()
+        return scrapingController.scrapGithubUsersRepositoriesSkills(token, location)
+
+    except ValueError as e:
+        return 'Failed to scrapGithubUsersRepositoriesSkills {0}'.format(e)
+
 '''
     Initilization
 '''

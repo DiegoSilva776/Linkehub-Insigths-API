@@ -19,3 +19,5 @@ class NetworkingUtils():
         self.PREFIX_HEROKU_APPS_GIT_REPO = "git.heroku.com/"
 
         self.LINKEHUB_API_INSTANCE_PREFIX_BASE_URL = "linkehub-api-"
+
+        self.TIMEOUT_REQUEST_GITHUB_API = 3600
