@@ -4,9 +4,10 @@ import os
 
 from flask import Flask
 from flask import request
-
 from werkzeug.serving import WSGIRequestHandler
 from controllers.DeploymentController import DeploymentController
+from controllers.ScrapingController import ScrapingController
+from utils.InputUtils import InputUtils
 
 # Construction
 app = Flask(__name__)
@@ -25,8 +26,24 @@ def deployNCopiesRootInstance():
         deploymentController = DeploymentController()
         return deploymentController.deployNCopiesRootInstance(startIdx, endIdx)
 
-    except ValueError:
-        return 'Failed to deployNCopiesRootInstance'
+    except ValueError as e:
+        return 'Failed to deployNCopiesRootInstance {0}'.format(e)
+
+@app.route("/scrap_github_profiles_from_location", methods=["POST"])
+def scrapGithubProfilesFromLocation():
+    try:
+        inputUtils = InputUtils()
+
+        token = request.headers.get("access_token")
+        location = inputUtils.getCleanString(request.form["location"])
+        initialPage = request.form["initial_page"]
+        numPages = request.form["num_pages"]
+
+        scrapingController = ScrapingController()
+        return scrapingController.scrapBasicProfileGithubUsers(token, location, initialPage, numPages)
+
+    except ValueError as e:
+        return 'Failed to scrapGithubProfilesFromLocation {0}'.format(e)
 
 '''
     Initilization

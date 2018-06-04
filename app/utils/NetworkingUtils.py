@@ -15,4 +15,7 @@ class NetworkingUtils():
         self.ISO8859_15_DECODER = "iso8859-15"
 
         self.POSTFIX_HEROKU_APPS_URL = ".herokuapp.com/"
+        self.POSTFIX_HEROKU_APPS_URL_NO_DASH = ".herokuapp.com"
         self.PREFIX_HEROKU_APPS_GIT_REPO = "git.heroku.com/"
+
+        self.LINKEHUB_API_INSTANCE_PREFIX_BASE_URL = "linkehub-api-"
