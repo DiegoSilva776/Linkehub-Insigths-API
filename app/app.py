@@ -5,6 +5,7 @@ import os
 from flask import Flask
 from flask import request
 from werkzeug.serving import WSGIRequestHandler
+
 from controllers.DeploymentController import DeploymentController
 from controllers.ScrapingController import ScrapingController
 from utils.InputUtils import InputUtils
@@ -34,13 +35,14 @@ def scrapGithubProfilesFromLocation():
     try:
         inputUtils = InputUtils()
 
-        token = request.headers.get("access_token")
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
         location = inputUtils.getCleanString(request.form["location"])
         initialPage = request.form["initial_page"]
         numPages = request.form["num_pages"]
 
         scrapingController = ScrapingController()
-        return scrapingController.scrapBasicProfileGithubUsers(token, location, initialPage, numPages)
+        return scrapingController.scrapBasicProfileGithubUsers(username, password, location, initialPage, numPages)
 
     except ValueError as e:
         return 'Failed to scrapGithubProfilesFromLocation {0}'.format(e)
@@ -50,14 +52,30 @@ def scrapGithubUsersRepositoriesSkills():
     try:
         inputUtils = InputUtils()
 
-        token = request.headers.get("access_token")
-        location = inputUtils.getCleanString(request.form["location"])
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
 
         scrapingController = ScrapingController()
-        return scrapingController.scrapGithubUsersRepositoriesSkills(token, location)
+        return scrapingController.scrapGithubUsersRepositoriesSkills(username, password)
 
     except ValueError as e:
         return 'Failed to scrapGithubUsersRepositoriesSkills {0}'.format(e)
+
+@app.route("/scrap_commits_code_samples_github_users_from_location", methods=["POST"])
+def scrapCommitsCodeSamplesGithubUsersFromLocation():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+        location = inputUtils.getCleanString(request.form["location"])
+        skill = inputUtils.getCleanString(request.form["skill"])
+
+        scrapingController = ScrapingController()
+        return scrapingController.scrapCommitsCodeSamplesGithubUsersFromLocation(username, password, location, skill)
+
+    except ValueError as e:
+        return 'Failed to scrapCommitsCodeSamplesGithubUsersFromLocation {0}'.format(e)
 
 '''
     Initilization

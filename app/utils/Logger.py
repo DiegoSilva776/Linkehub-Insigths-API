@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 
-"""
-Logger.py contains variables and methods that are useful for loggin info out of
-the system into different data sources.
-"""
-
-# Imports
 import sys
 import time
 import datetime
+
 sys.path.append("../")
 
 from datetime import datetime
 from datetime import timedelta
 
+"""
+    Logger.py contains variables and methods that are useful for loggin info out of
+    the system into different data sources.
+"""
 class Logger:
 
     """

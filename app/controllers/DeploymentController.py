@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import os
 import json
 import http.client
 import urllib
 import time
 
+sys.path.append('../')
+
 from subprocess import call, run, PIPE, Popen
 from utils.Logger import Logger
 from utils.NetworkingUtils import NetworkingUtils
+from utils.ConstantUtils import ConstantUtils
 
 '''
     The methods of this class control the instances of the Linkehub microservice
@@ -34,6 +38,7 @@ class DeploymentController():
         self.PREFIX_SERVICE_DOCKER_IMG = "linkehub-api-i{0}:0.1"
 
         self.logger = Logger()
+        self.constUtils = ConstantUtils()
         self.networkUtils = NetworkingUtils()
 
     '''
@@ -70,21 +75,21 @@ class DeploymentController():
                         instanceNum
                     )
                     copyServiceUrl  = "{0}{1}{2}".format(
-                        self.networkUtils.HTTPS_PREFIX, 
+                        self.constUtils.HTTPS_PREFIX, 
                         copyServiceName, 
-                        self.networkUtils.POSTFIX_HEROKU_APPS_URL
+                        self.constUtils.POSTFIX_HEROKU_APPS_URL
                     )
                     rootServiceRepoUrl = "{0}{1}{2}{3}".format(
-                        self.networkUtils.HTTPS_PREFIX,
-                        self.networkUtils.PREFIX_HEROKU_APPS_GIT_REPO,
+                        self.constUtils.HTTPS_PREFIX,
+                        self.constUtils.PREFIX_HEROKU_APPS_GIT_REPO,
                         self.ROOT_SERVICE_NAME,
-                        self.networkUtils.GIT_POSTFIX
+                        self.constUtils.GIT_POSTFIX
                     )
                     copyServiceRepoUrl = "{0}{1}{2}{3}".format(
-                        self.networkUtils.HTTPS_PREFIX,
-                        self.networkUtils.PREFIX_HEROKU_APPS_GIT_REPO,
+                        self.constUtils.HTTPS_PREFIX,
+                        self.constUtils.PREFIX_HEROKU_APPS_GIT_REPO,
                         copyServiceName,
-                        self.networkUtils.GIT_POSTFIX
+                        self.constUtils.GIT_POSTFIX
                     )
                     dockerImgNewService = self.PREFIX_SERVICE_DOCKER_IMG.format(instanceNum)
 

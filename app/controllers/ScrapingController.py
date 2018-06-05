@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import os
 import json
 import http.client
 import urllib
 import time
 
-from subprocess import call, run, PIPE, Popen
+sys.path.append('../')
+
 from utils.Logger import Logger
 from utils.NetworkingUtils import NetworkingUtils
+from utils.ConstantUtils import ConstantUtils
+from controllers.AuthController import AuthController
 
 '''
     The methods of this class control manage the data scraping process of the Linkehub API and distribute the
@@ -17,17 +21,22 @@ from utils.NetworkingUtils import NetworkingUtils
 class ScrapingController():
 
     def __init__(self):
+        self.TAG = "ScrapingController"
+
         self.logger = Logger()
         self.netUtils = NetworkingUtils()
+        self.constUtils = ConstantUtils()
+        self.authController = AuthController()
+
         self.idxNextInstance = 0
         self.locations = [
             "recife",
-            "manaus",
-            "curitiba",
             "sao paulo",
-            "belo horizonte",
             "rio de janeiro",
+            "belo horizonte",
+            "manaus",
             "porto alegre",
+            "curitiba",
             "fortaleza"
             "berlin",
             "london",
@@ -35,86 +44,21 @@ class ScrapingController():
             "san francisco",
             "tokyo",
             "amsterdam",
-            "ottawa"
-        ]
-        self.apiInstancesUrls = [
-            {
-                "id" : 0,
-                "name" : "root",
-                "url" : "https://linkehub-api-root.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 1,
-                "name" : "i0",
-                "url" : "https://linkehub-api-i0.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 2,
-                "name" : "i1",
-                "url" : "https://linkehub-api-i1.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 3,
-                "name" : "i2",
-                "url" : "https://linkehub-api-i2.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 4,
-                "name" : "i3",
-                "url" : "https://linkehub-api-i3.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 5,
-                "name" : "i4",
-                "url" : "https://linkehub-api-i4.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 6,
-                "name" : "i5",
-                "url" : "https://linkehub-api-i5.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 7,
-                "name" : "i6",
-                "url" : "https://linkehub-api-i6.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 8,
-                "name" : "i7",
-                "url" : "https://linkehub-api-i7.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 9,
-                "name" : "i8",
-                "url" : "https://linkehub-api-i8.herokuapp.com/",
-                "remaining_calls_github" : 0
-            },
-            {
-                "id" : 10,
-                "name" : "i9",
-                "url" : "https://linkehub-api-i9.herokuapp.com/",
-                "remaining_calls_github" : 0
-            }
+            "ottawa",
+            "zurich"
         ]
 
+    ## ---------------------------------------------------------- ##
+    ## Requests: Methods used to extract info from the Github API ##
+    ## ---------------------------------------------------------- ##
     '''
         Scrap the basic profile info of Github users from a given city
     '''
-    def scrapBasicProfileGithubUsers(self, token, location, initialPage, numPages):
+    def scrapBasicProfileGithubUsers(self, username, password, location, initialPage, numPages):
         response = {
             "success" : False,
             "msg" : "Failed to scrap basic profile info of Github users from the given location",
             "instances" : "",
-            "num_requests_missing_to_fully_complete_goal" : "",
             "last_page" : "",
             "num_fails" : 0,
             "failed_pages" : [],
@@ -123,400 +67,312 @@ class ScrapingController():
 
         try:
 
-            if not token or not location or not initialPage or not numPages:
-                response["msg"] = "{0}. {1}".format(response["msg"], "Invalid location.")
+            if not username or not password or not location or not initialPage or not numPages:
+                response["msg"] = "{0}. {1}".format(response["msg"], "Invalid input parameters.")
             else:
-                print("\nRequesting profiles for location: {0} ...".format(location))
-                currentPage = int(initialPage)
-                numPages = int(numPages)
+                token = self.authController.login(username, password)
 
-                # Identify the number of remaining requests to the Github API for each instance of the service
-                self.apiInstancesUrls = self.updateListRemainingRequestsGithubAPI(token, self.apiInstancesUrls)
-                response["instances"] = self.apiInstancesUrls
+                if token != "":
+                    print("\nRequesting basic Github profiles of users from location: {0} ...".format(location))
+                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
 
-                # Identify the number of remaining requests to the Github API for each instance of the API
-                numRequestsGithubApi = self.getNumRemaningRequestToGithub(self.apiInstancesUrls)
-                response["num_requests_missing_to_fully_complete_goal"] = 0
+                    for currentPage in range(int(initialPage), int(numPages)):
+                        # Hold the process until we have more requests, if needed
+                        self.netUtils.waitRequestGithubApiIfNeeded(token)
+                        apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
-                if numPages > numRequestsGithubApi:
-                    response["num_requests_missing_to_fully_complete_goal"] = numPages - numRequestsGithubApi
+                        try:
+                            # Make a request to the Github API and verify if the limit of requests per hour has been exceeded
+                            connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+                            headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
+                            endpoint = "/get_github_users_from_location/?store_in_db={0}&location={1}&page_number={2}".format(
+                                True,
+                                urllib.parse.quote(location),
+                                currentPage
+                            )
+                            connection.request("GET", endpoint, headers=headers)
 
-                # Distribute the load of requests to the Github API between the servers
-                print("\nScrap the basic profile of Github users in {0}: \n".format(location))
+                            print("\nGET list of users from a location and store on DB \nurl: {0}{1}".format(apiInstance.getBaseUrl(), endpoint))
 
-                for apiInstance in range(0, numPages):
-                    apiInstance = self.getInstanceForRequestToGithubAPI()
+                            res = connection.getresponse()
+                            data = res.read()
+                            githubApiResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
+                            apiInstance.remainingCallsGithub -= 1
 
-                    if apiInstance["remaining_calls_github"] > 0:
-                        url = self.getBaseUrlInstance(apiInstance["name"])
+                            # Process the response
+                            succesfulResponse = False
 
-                        if url is not None:
+                            if githubApiResponse is not None:
+                                
+                                if "success" in githubApiResponse:
 
-                            # Create a connection to the Github API
-                            try:
-                                connection = http.client.HTTPSConnection(url)
-
-                                # Make a request to the Github API and verify if the limit of requests per hour has been exceeded
-                                headers = {
-                                    "cache-control": "no-cache",
-                                    "User-Agent": "Linkehub-API-Manager",
-                                    "access_token": token
-                                }
-                                endpoint = "/get_github_users_from_location/?store_in_db={0}&location={1}&page_number={2}".format(
-                                    True,
-                                    urllib.parse.quote(location),
-                                    currentPage
-                                )
-                                connection.request("GET", endpoint, headers=headers)
-
-                                res = connection.getresponse()
-                                data = res.read()
-                                githubApiResponse = json.loads(data.decode(self.netUtils.UTF8_DECODER))
-
-                                print("GET list of users from a location and store on DB \nurl: {0}{1}".format(url, endpoint))
-
-                                # Process the response
-                                if githubApiResponse is not None:
-                                    currentPage += 1
-
-                                    if "success" in githubApiResponse:
-
-                                        if not githubApiResponse["success"]:
-                                            response["num_fails"] += 1
-                                            response["failed_pages"].append(currentPage)
-
-                                            print(githubApiResponse["msg"])
-
+                                    if githubApiResponse["success"]:
+                                        succesfulResponse = True
                                     else:
-                                        response["num_fails"] += 1
-                                        response["failed_pages"].append(currentPage)
-                                else:
-                                    response["num_fails"] += 1
-                                    response["failed_pages"].append(currentPage)
+                                        print(githubApiResponse["msg"])
 
-                                apiInstance["remaining_calls_github"] -= 1
+                            if not succesfulResponse:
+                                response["num_fails"] += 1
+                                response["failed_pages"].append(currentPage)
 
-                            except Exception as e:
-                                print("Failed to process a Github user profile: {0}".format(e))
+                        except Exception as e:
+                            print("{0} Failed to process a Github user profile: {1}".format(self.TAG, e))
 
-                    # Hold the process until we have more requests, if needed
-                    self.waitRequestGithubApiIfNeeded()
+                        # Wait a little bit until the next request
+                        time.sleep(0.5)
 
-                    # Wait a little bit until the next request
-                    time.sleep(1)
+                    # Fetch a successful response
+                    response["success"] = True
+                    response["msg"] = "The script scrapBasicProfileGithubUsers executed correctly"
+                    response["instances"] = self.netUtils.getSerializableApiInstances()
+                    response["last_page"] = currentPage
+                    response["created_at"] = self.logger.get_utc_iso_timestamp()
+                else:
+                    response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
 
-                # Ensure the limit of requests is going to reset until the next location
-                time.sleep(3)
-
-                # Fetch a successful response
-                response["success"] = True
-                response["msg"] = "The script scrapBasicProfileGithubUsers executed correctly"
-                response["last_page"] = currentPage
-                response["created_at"] = self.logger.get_utc_iso_timestamp()
-
-        except ValueError as err:
-            print("Failed to scrapBasicProfileGithubUsers {0}".format(err))
+        except ValueError as e:
+            print("{0} Failed to scrapBasicProfileGithubUsers {1}".format(self.TAG, e))
 
         return json.dumps(response)
 
     '''
         Scrap repositories and skills of Github users from a location
     '''
-    def scrapGithubUsersRepositoriesSkills(self, token, location):
+    def scrapGithubUsersRepositoriesSkills(self, username, password):
         response = {
             "success" : False,
             "msg" : "Failed to scrap the repositories and skills of Github users from a location",
             "instances" : "",
-            "num_requests_missing_to_fully_complete_goal" : 0,
             "num_fails" : 0,
-            "failed_locations" : [],
-            "failed_user_ids" : [],
             "created_at" : ""
         }
 
         try:
 
-            if not token or not location:
+            if not username or not password:
                 response["msg"] = "{0}. {1}".format(response["msg"], "Invalid input parameters.")
             else:
-                # Todo: >>>> remove this after batch scraping
-                for listLocation in self.locations:
-                    location = listLocation
+                token = self.authController.login(username, password)
 
-                    print("\nRequesting repositories and skills of Github users from a location: {0} ...".format(location))
+                if token != "":
+                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
 
-                    # Todo: remove this after the script
-                    headers = {
-                        "Content-type": "application/x-www-form-urlencoded",
-                        "Accept": "text/plain"
-                    }
-                    params = urllib.parse.urlencode({
-                        "username" : "adm.linkehub@gmail.com",
-                        "password" : "<<FprojLinkehub01<<"
-                    })
-                    connection = http.client.HTTPSConnection("linkehub-api-root.herokuapp.com")
-                    connection.request("POST", "/login", params, headers=headers)
+                    # Make a request to the Linkehub database and return all the Github user ids from a location
+                    for listLocation in self.locations:
+                        location = listLocation
 
-                    res = connection.getresponse()
-                    data = res.read()
-                    loginResponse = json.loads(data.decode(self.netUtils.UTF8_DECODER))
-
-                    if loginResponse is not None:
-                        token = loginResponse["access_token"]
-
-                    print("location: {0}".format(location))
-                    print("token: {0}".format(token))
-                    # ./Todo
-
-                    # Identify the number of remaining requests to the Github API for each instance of the service
-                    self.apiInstancesUrls = self.updateListRemainingRequestsGithubAPI(token, self.apiInstancesUrls)
-                    response["instances"] = self.apiInstancesUrls
-
-                    # Request the list of Github user ids from a location
-                    apiInstance = self.getInstanceForRequestToGithubAPI()
-                    url = self.getBaseUrlInstance(apiInstance["name"])
-
-                    if url is not None:
+                        print("\nRequesting repositories and skills of Github users from : {0} ...".format(location))
 
                         try:
-                            # Make a request to the Linkehub database and return all the Github user ids from a location
-                            connection = http.client.HTTPSConnection(url)
-                            headers = {
-                                "cache-control": "no-cache",
-                                "User-Agent": "Linkehub-API-Manager",
-                                "access_token": token
-                            }
-                            endpoint = "/get_github_user_ids_from_location/?location={0}".format(
-                                urllib.parse.quote(location)
-                            )
-                            connection.request("GET", endpoint, headers=headers)
+                            # Request a list of userIds from the service Database
+                            userIds = self.getGithubUserIdsFromLocation(token, location)
 
-                            res = connection.getresponse()
-                            data = res.read()
-                            githubUserIdsResponse = json.loads(data.decode(self.netUtils.UTF8_DECODER))
-                            apiInstance["remaining_calls_github"] -= 1
+                            # Request the list of repositories and skills associated to a Github user
+                            for githubUserId in userIds:
 
-                            # Process the response
-                            if githubUserIdsResponse is not None:
+                                try:
+                                    # Hold the process until we have more requests, if needed
+                                    self.netUtils.waitRequestGithubApiIfNeeded(token)
+                                    apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
-                                if "success" in githubUserIdsResponse:
+                                    print("Number of remaining requests to the Github API: {0}".format(self.netUtils.getNumRemaningRequestToGithub()))
+                                        
+                                    if apiInstance.remainingCallsGithub > 0:
 
-                                    if githubUserIdsResponse["success"]:
+                                        # This endpoint requests the repositories from the Github API, process the response and 
+                                        # stores the list of repos and skills in the service Database
+                                        connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+                                        headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
+                                        endpoint = "/scrap_user_repositories_skils_from_github/?githubUserId={0}".format(
+                                            urllib.parse.quote(githubUserId)
+                                        )
+                                        connection.request("GET", endpoint, headers=headers)
 
-                                        if "github_user_ids" in githubUserIdsResponse:
-                                            userIds = githubUserIdsResponse["github_user_ids"]
+                                        print("\nGET repositories and skills of the Github user: {0}".format(githubUserId))
+                                        print("url: {0}{1}".format(apiInstance.getBaseUrl(), endpoint))
 
-                                            if isinstance(userIds, list):
-                                                # Get the number of remaining requests to the Github API for each instance of the Linkehub API
-                                                numRequestsGithubApi = self.getNumRemaningRequestToGithub(self.apiInstancesUrls)
+                                        res = connection.getresponse()
+                                        data = res.read()
+                                        githubUserReposSkillsResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
 
-                                                if len(userIds) > numRequestsGithubApi:
-                                                    response["num_requests_missing_to_fully_complete_goal"] = len(userIds) - numRequestsGithubApi
+                                        apiInstance.remainingCallsGithub -= 1
 
-                                                # Hold the process until we have more requests, if needed
-                                                self.waitRequestGithubApiIfNeeded()
+                                        # Process the response
+                                        if githubUserReposSkillsResponse is not None:
 
-                                                for githubUserId in userIds:
+                                            if "success" in githubUserReposSkillsResponse:
 
-                                                    # Request the list of repositories and skills associated to a Github user id
-                                                    try:
-                                                        apiInstance = self.getInstanceForRequestToGithubAPI()
-                                                        url = self.getBaseUrlInstance(apiInstance["name"])
+                                                if not githubUserReposSkillsResponse["success"]:
+                                                    response["num_fails"] += 1
 
-                                                        if apiInstance["remaining_calls_github"] > 0 and url is not None:
-                                                            # This endpoint requests the repositories from the Github API, process the response and 
-                                                            # stores the list of repos and skills in the Linkehub Database
-                                                            connection = http.client.HTTPSConnection(url)
-                                                            headers = {
-                                                                "cache-control": "no-cache",
-                                                                "User-Agent": "Linkehub-API-Manager",
-                                                                "access_token": token
-                                                            }
-                                                            endpoint = "/scrap_user_repositories_skils_from_github/?githubUserId={0}".format(
-                                                                urllib.parse.quote(githubUserId)
-                                                            )
-                                                            connection.request("GET", endpoint, headers=headers)
+                                                    if "msg" in githubUserReposSkillsResponse:
+                                                        print(githubUserReposSkillsResponse["msg"])
 
-                                                            print("\nGET repositories and skills of the Github user: {0}".format(githubUserId))
-                                                            print("url: {0}{1}".format(url, endpoint))
-
-                                                            res = connection.getresponse()
-                                                            data = res.read()
-                                                            githubUserReposSkillsResponse = json.loads(data.decode(self.netUtils.UTF8_DECODER))
-                                                            apiInstance["remaining_calls_github"] -= 1
-
-                                                            # Process the response
-                                                            if githubUserReposSkillsResponse is not None:
-
-                                                                if "success" in githubUserReposSkillsResponse:
-
-                                                                    if not githubUserReposSkillsResponse["success"]:
-                                                                        response["num_fails"] += 1
-
-                                                                        if "msg" in githubUserReposSkillsResponse:
-                                                                            print(githubUserReposSkillsResponse["msg"])
-
-                                                                    else:
-                                                                        response["num_fails"] += 1
-                                                                else:
-                                                                    response["num_fails"] += 1
-                                                            else:
-                                                                response["num_fails"] += 1
-
-                                                    except Exception as e:
-                                                        print("Failed to process the repositories and skills of the user: {0} \ncause: {1}".format(githubUserId, e))
-
-                                                    # Wait a little bit until the next request
-                                                    time.sleep(1)
-
+                                                    else:
+                                                        response["num_fails"] += 1
+                                                else:
+                                                    response["num_fails"] += 1
                                             else:
-                                                response["failed_locations"].append(location)
+                                                response["num_fails"] += 1
                                         else:
-                                            response["failed_locations"].append(location)
-                                    else:
-                                        response["failed_locations"].append(location)
-                                else:
-                                    response["failed_locations"].append(location)
-                            else:
-                                response["failed_locations"].append(location)
+                                            response["num_fails"] += 1
+
+                                except Exception as e:
+                                    print("{0} Failed to process the repositories and skills of the user: {1} \ncause: {2}".format(self.TAG, githubUserId, e))
+
+                                # Wait a little bit until the next request
+                                time.sleep(0.5)
 
                         except Exception as e:
-                            print("Failed to process the list of repositories and skills of Github users from: {0} \n cause:{1}".format(location, e))
+                            print("{0} Failed to process the list of repositories and skills of Github users from: {1} \ncause:{2}".format(self.TAG, location, e))
 
-                    # Wait a little bit until the next request
-                    time.sleep(3)
+                    # Fetch a successful response
+                    response["success"] = True
+                    response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
+                    response["instances"] = self.netUtils.getSerializableApiInstances()
+                    response["created_at"] = self.logger.get_utc_iso_timestamp()
+                else:
+                    response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
 
-                # Fetch a successful response
-                response["success"] = True
-                response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
-                response["created_at"] = self.logger.get_utc_iso_timestamp()
-
-        except ValueError as err:
-            print("Failed to scrapGithubUsersRepositoriesSkills {0}".format(err))
+        except ValueError as e:
+            print("{0} Failed to scrapGithubUsersRepositoriesSkills: {1}".format(self.TAG, e))
 
         return json.dumps(response)
 
     '''
-        Verify how many requests an instance of the Linkehub API still has to the Github API before the 
-        limit of requests per hour get exceeded.
+        Scrap list of commits of Github users from a location, the users are gathered from the Linkehub database 
+        and them complemented with Github data
     '''
-    def updateListRemainingRequestsGithubAPI(self, token, apiInstancesUrls):
+    def scrapCommitsCodeSamplesGithubUsersFromLocation(self, username, password, location, skill):
+        response = {
+            "success" : False,
+            "msg" : "Failed to scrap the commits and code samples of the Github users from the location",
+            "instances" : "",
+            "num_fails" : 0,
+            "created_at" : ""
+        }
+
         try:
 
-            # Identify the number of remaining requests to the Github API for each instance of the API
-            print("\nVerify the number of remaining requests to the Github API for the instance: \n")
+            if not username or not password or not location or not skill:
+                response["msg"] = "{0}. {1}".format(response["msg"], "Invalid input parameters.")
+            else:
+                token = self.authController.login(username, password)
 
-            for apiInstance in apiInstancesUrls:
+                if token != "":
+                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
 
-                # Create a connection with the Github API
-                url = self.getBaseUrlInstance(apiInstance["name"])
+                    print("\nRequesting commits and code samples of Github users from : {0} ...".format(location))
 
-                if url is not None:
-                    connection = http.client.HTTPSConnection(url)
+                    # Request a list of userIds from the service Database
+                    userIds = self.getGithubUserIdsFromLocation(token, location)
 
-                    # Make a request to the Github API and verify if the limit of requests per hour has been exceeded
-                    print(url)
+                    # Request the list of repositories and skills associated to a Github user
+                    for githubUserId in userIds:
 
-                    headers = {
-                        "cache-control": "no-cache",
-                        "User-Agent": "Linkehub-API-Manager",
-                        "access_token": token
-                    }
-                    endpoint = "/has_expired_requests_per_hour_github/"
+                        try:
+                            # Hold the process until we have more requests, if needed
+                            self.netUtils.waitRequestGithubApiIfNeeded(token)
+                            apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
-                    connection.request("GET", endpoint, headers=headers)
+                            print("Number of remaining requests to the Github API: {0}".format(self.netUtils.getNumRemaningRequestToGithub()))
 
-                    res = connection.getresponse()
-                    data = res.read()
-                    githubApiResponse = json.loads(data.decode(self.netUtils.UTF8_DECODER))
+                            if apiInstance.remainingCallsGithub > 0:
+                                # This endpoint requests the repositories from the Github API, process the response and 
+                                # stores the list of repos and skills in the service Database
+                                connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+                                headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
+                                endpoint = "/scrap_user_commits_language_github/?githubUserId={0}&language={1}".format(
+                                    urllib.parse.quote(githubUserId),
+                                    urllib.parse.quote(skill),
+                                )
+                                connection.request("GET", endpoint, headers=headers)
 
-                    if githubApiResponse is not None:
-                                
-                        if "usage" in githubApiResponse:
-                            usage = githubApiResponse["usage"]
+                                print("\nGET repositories and skills of the Github user: {0}".format(githubUserId))
+                                print("url: {0}{1}".format(apiInstance.getBaseUrl(), endpoint))
 
-                            if "remaining" in usage:
-                                apiInstance["remaining_calls_github"] = usage["remaining"]
+                                res = connection.getresponse()
+                                data = res.read()
+                                githubUserReposSkillsResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
 
-        except Exception as err:
-            print("Failed to scrapBasicProfileGithubUsers {0}".format(err))
+                                apiInstance.remainingCallsGithub -= 1
 
-        return apiInstancesUrls
+                                # Process the response
+                                if githubUserReposSkillsResponse is not None:
+
+                                    if "success" in githubUserReposSkillsResponse:
+
+                                        if not githubUserReposSkillsResponse["success"]:
+                                            response["num_fails"] += 1
+
+                                            if "msg" in githubUserReposSkillsResponse:
+                                                print(githubUserReposSkillsResponse["msg"])
+
+                                            else:
+                                                response["num_fails"] += 1
+                                        else:
+                                            response["num_fails"] += 1
+                                    else:
+                                        response["num_fails"] += 1
+                                else:
+                                    response["num_fails"] += 1
+
+                        except Exception as e:
+                            print("{0} Failed to process the repositories and skills of the user: {1} \ncause: {2}".format(self.TAG, githubUserId, e))
+
+                        # Wait a little bit until the next request
+                        time.sleep(0.5)
+                        
+                    # Fetch a successful response
+                    response["success"] = True
+                    response["msg"] = "The script scrapCommitsCodeSamplesGithubUsersFromLocation executed correctly"
+                    response["instances"] = self.netUtils.getSerializableApiInstances()
+                    response["created_at"] = self.logger.get_utc_iso_timestamp()
+                else:
+                    response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
+
+        except ValueError as e:
+            print("{0} Failed to scrapCommitsCodeSamplesGithubUsersFromLocation: {1}".format(self.TAG, e))
+
+        return json.dumps(response)
 
     '''
-        Build the base url of an instance of the API
+        Return a list of all Github users in the database that are from a location
     '''
-    def getBaseUrlInstance(self, name):
-        baseUrl = None
+    def getGithubUserIdsFromLocation(self, token, location):
+        userIds = []
 
-        try:        
-            baseUrl = "{0}{1}{2}".format(
-                self.netUtils.LINKEHUB_API_INSTANCE_PREFIX_BASE_URL, 
-                name, 
-                self.netUtils.POSTFIX_HEROKU_APPS_URL_NO_DASH
+        try:
+            # Update the status of the instances of the service and get the best instance for the next request                            
+            self.netUtils.waitRequestGithubApiIfNeeded(token)
+            apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
+
+            connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+            headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
+            endpoint = "/get_github_user_ids_from_location/?location={0}".format(
+                urllib.parse.quote(location)
             )
+            connection.request("GET", endpoint, headers=headers)
 
-        except Exception as err:
-            print("Failed to getBaseUrlInstance {0}".format(err))
+            res = connection.getresponse()
+            data = res.read()
+            githubUserIdsResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
 
-        return baseUrl
+            apiInstance.remainingCallsGithub -= 1
 
-    '''
-        If the number of available requests to the Github API has exceeded, wait until the instances get refueled
-    '''
-    def waitRequestGithubApiIfNeeded(self):
-        try:
-            numRequestsGithubApi = self.getNumRemaningRequestToGithub(self.apiInstancesUrls)
-            print("Number of available requests to the Github API: {0} \n".format(numRequestsGithubApi))
+            # Process the response
+            if githubUserIdsResponse is not None:
 
-            if numRequestsGithubApi == 0:
-                i = 0
-                print("The maximum number of requests to the Github API has been exceeded for all instances of the service, we'll resume the process in an hour ...")
+                if "success" in githubUserIdsResponse:
 
-                while i < self.netUtils.TIMEOUT_REQUEST_GITHUB_API:
-                    i += 1
-                    time.sleep(1)
-                    print("We'll still have to wait {0} ...".format(self.netUtils.TIMEOUT_REQUEST_GITHUB_API - i))
+                    if githubUserIdsResponse["success"]:
 
-        except Exception as err:
-            print("Failed to waitRequestGithubApiIfNeeded {0}".format(err))
+                        if "github_user_ids" in githubUserIdsResponse:
 
-    '''
-        Returns the sum of the remaning requests to the Github API for each instance of the service
-    '''
-    def getNumRemaningRequestToGithub(self, apiInstancesUrls):
-        totalRemainingRequestToGithubAPI = 0
+                            if isinstance(githubUserIdsResponse["github_user_ids"], list):
+                                userIds = githubUserIdsResponse["github_user_ids"]
 
-        try:
+        except Exception as e:
+            print("{0} Failed to getGithubUserIdsFromLocation: {1}".format(self.TAG, e))
 
-            for apiInstance in apiInstancesUrls:
-                
-                if "remaining_calls_github" in apiInstance:
-                    totalRemainingRequestToGithubAPI += apiInstance["remaining_calls_github"]
-
-        except Exception as err:
-            print("Failed to getBaseUrlInstance {0}".format(err))
-
-        return totalRemainingRequestToGithubAPI
-
-    '''
-        Return the instance of the service with the largest number of remaining requests to the Github API
-    '''
-    def getInstanceForRequestToGithubAPI(self):
-        nextInstance = self.apiInstancesUrls[0]
-        largestNumRemainingRequests = 0
-
-        try:
-
-            for apiInstance in self.apiInstancesUrls:
-
-                if "remaining_calls_github" in apiInstance:
-
-                    if apiInstance["remaining_calls_github"] > largestNumRemainingRequests:
-                        largestNumRemainingRequests = apiInstance["remaining_calls_github"]
-                        nextInstance = apiInstance
-
-        except Exception as err:
-            print("Failed to getInstanceForRequestToGithubAPI {0}".format(err))
-
-        return nextInstance
+        return userIds

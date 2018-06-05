@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-"""
-Manage the inputs of the most external part of the API
-"""
-
-# Imports
 import sys
 import time
 import datetime
+
 sys.path.append("../")
 
 from datetime import datetime
 from datetime import timedelta
 
+"""
+    Manage the inputs of the most external part of the API
+"""
 class InputUtils:
 
     def __init__(self):
