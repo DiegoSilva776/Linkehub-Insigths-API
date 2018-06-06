@@ -9,6 +9,7 @@ from werkzeug.serving import WSGIRequestHandler
 from controllers.DeploymentController import DeploymentController
 from controllers.ScrapingController import ScrapingController
 from utils.InputUtils import InputUtils
+from utils.NetworkingUtils import NetworkingUtils
 
 # Construction
 app = Flask(__name__)

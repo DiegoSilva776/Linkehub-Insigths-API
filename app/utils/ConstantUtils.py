@@ -21,9 +21,10 @@ class ConstantUtils:
         self.PREFIX_HEROKU_APPS_GIT_REPO = "git.heroku.com/"
 
         # Github related
-        self.TIMEOUT_REQUEST_GITHUB_API = 10
+        self.TIMEOUT_REQUEST_GITHUB_API = 3000
 
         # Service API related
         self.LINKEHUB_API_INSTANCE_PREFIX_BASE_URL = "linkehub-api-"
         self.HEADERS_TYPE_AUTH_TOKEN = 1
         self.HEADERS_TYPE_URL_ENCODED = 2
+        self.HEADERS_TYPE_NO_AUTH_TOKEN = 3

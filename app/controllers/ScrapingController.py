@@ -30,14 +30,8 @@ class ScrapingController():
 
         self.idxNextInstance = 0
         self.locations = [
-            "recife",
             "sao paulo",
-            "rio de janeiro",
-            "belo horizonte",
-            "manaus",
-            "porto alegre",
-            "curitiba",
-            "fortaleza"
+            "rio de janeiro"
             "berlin",
             "london",
             "new york",
@@ -45,12 +39,18 @@ class ScrapingController():
             "tokyo",
             "amsterdam",
             "ottawa",
-            "zurich"
+            "zurich",
+            "belo horizonte",
+            "manaus",
+            "porto alegre",
+            "curitiba",
+            "fortaleza",
+            "recife"
         ]
 
-    ## ---------------------------------------------------------- ##
-    ## Requests: Methods used to extract info from the Github API ##
-    ## ---------------------------------------------------------- ##
+    ## ------------- ##
+    ## Main requests ##
+    ## ------------- ##
     '''
         Scrap the basic profile info of Github users from a given city
     '''
@@ -62,7 +62,8 @@ class ScrapingController():
             "last_page" : "",
             "num_fails" : 0,
             "failed_pages" : [],
-            "created_at" : ""
+            "started_at" : self.logger.get_utc_iso_timestamp(),
+            "finished_at" : ""
         }
 
         try:
@@ -74,11 +75,11 @@ class ScrapingController():
 
                 if token != "":
                     print("\nRequesting basic Github profiles of users from location: {0} ...".format(location))
-                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
+                    self.netUtils.updateListRemainingRequestsGithubAPI()
 
                     for currentPage in range(int(initialPage), int(numPages)):
                         # Hold the process until we have more requests, if needed
-                        self.netUtils.waitRequestGithubApiIfNeeded(token)
+                        self.netUtils.waitRequestGithubApiIfNeeded()
                         apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
                         try:
@@ -126,7 +127,7 @@ class ScrapingController():
                     response["msg"] = "The script scrapBasicProfileGithubUsers executed correctly"
                     response["instances"] = self.netUtils.getSerializableApiInstances()
                     response["last_page"] = currentPage
-                    response["created_at"] = self.logger.get_utc_iso_timestamp()
+                    response["finished_at"] = self.logger.get_utc_iso_timestamp()
                 else:
                     response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
 
@@ -144,7 +145,8 @@ class ScrapingController():
             "msg" : "Failed to scrap the repositories and skills of Github users from a location",
             "instances" : "",
             "num_fails" : 0,
-            "created_at" : ""
+            "started_at" : self.logger.get_utc_iso_timestamp(),
+            "finished_at" : ""
         }
 
         try:
@@ -152,16 +154,14 @@ class ScrapingController():
             if not username or not password:
                 response["msg"] = "{0}. {1}".format(response["msg"], "Invalid input parameters.")
             else:
-                token = self.authController.login(username, password)
+                
+                # Make a request to the Linkehub database and return all the Github user ids from a location
+                for location in self.locations:
+                    token = self.authController.login(username, password)
 
-                if token != "":
-                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
-
-                    # Make a request to the Linkehub database and return all the Github user ids from a location
-                    for listLocation in self.locations:
-                        location = listLocation
-
+                    if token != "":
                         print("\nRequesting repositories and skills of Github users from : {0} ...".format(location))
+                        self.netUtils.updateListRemainingRequestsGithubAPI()
 
                         try:
                             # Request a list of userIds from the service Database
@@ -172,7 +172,7 @@ class ScrapingController():
 
                                 try:
                                     # Hold the process until we have more requests, if needed
-                                    self.netUtils.waitRequestGithubApiIfNeeded(token)
+                                    self.netUtils.waitRequestGithubApiIfNeeded()
                                     apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
                                     print("Number of remaining requests to the Github API: {0}".format(self.netUtils.getNumRemaningRequestToGithub()))
@@ -226,13 +226,14 @@ class ScrapingController():
                         except Exception as e:
                             print("{0} Failed to process the list of repositories and skills of Github users from: {1} \ncause:{2}".format(self.TAG, location, e))
 
-                    # Fetch a successful response
-                    response["success"] = True
-                    response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
-                    response["instances"] = self.netUtils.getSerializableApiInstances()
-                    response["created_at"] = self.logger.get_utc_iso_timestamp()
-                else:
-                    response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
+                    else:
+                        response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
+
+                # Fetch a successful response
+                response["success"] = True
+                response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
+                response["instances"] = self.netUtils.getSerializableApiInstances()
+                response["finished_at"] = self.logger.get_utc_iso_timestamp()
 
         except ValueError as e:
             print("{0} Failed to scrapGithubUsersRepositoriesSkills: {1}".format(self.TAG, e))
@@ -249,7 +250,8 @@ class ScrapingController():
             "msg" : "Failed to scrap the commits and code samples of the Github users from the location",
             "instances" : "",
             "num_fails" : 0,
-            "created_at" : ""
+            "started_at" : self.logger.get_utc_iso_timestamp(),
+            "finished_at" : ""
         }
 
         try:
@@ -260,9 +262,8 @@ class ScrapingController():
                 token = self.authController.login(username, password)
 
                 if token != "":
-                    self.netUtils.updateListRemainingRequestsGithubAPI(token)
-
                     print("\nRequesting commits and code samples of Github users from : {0} ...".format(location))
+                    self.netUtils.updateListRemainingRequestsGithubAPI()
 
                     # Request a list of userIds from the service Database
                     userIds = self.getGithubUserIdsFromLocation(token, location)
@@ -272,7 +273,7 @@ class ScrapingController():
 
                         try:
                             # Hold the process until we have more requests, if needed
-                            self.netUtils.waitRequestGithubApiIfNeeded(token)
+                            self.netUtils.waitRequestGithubApiIfNeeded()
                             apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
                             print("Number of remaining requests to the Github API: {0}".format(self.netUtils.getNumRemaningRequestToGithub()))
@@ -327,7 +328,7 @@ class ScrapingController():
                     response["success"] = True
                     response["msg"] = "The script scrapCommitsCodeSamplesGithubUsersFromLocation executed correctly"
                     response["instances"] = self.netUtils.getSerializableApiInstances()
-                    response["created_at"] = self.logger.get_utc_iso_timestamp()
+                    response["finished_at"] = self.logger.get_utc_iso_timestamp()
                 else:
                     response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
 
@@ -336,6 +337,9 @@ class ScrapingController():
 
         return json.dumps(response)
 
+    ## ------------------ ##
+    ## Auxiliary requests ##
+    ## ------------------ ##
     '''
         Return a list of all Github users in the database that are from a location
     '''
@@ -344,7 +348,7 @@ class ScrapingController():
 
         try:
             # Update the status of the instances of the service and get the best instance for the next request                            
-            self.netUtils.waitRequestGithubApiIfNeeded(token)
+            self.netUtils.waitRequestGithubApiIfNeeded()
             apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
             connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
