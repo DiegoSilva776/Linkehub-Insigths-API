@@ -55,9 +55,10 @@ def scrapGithubUsersRepositoriesSkills():
 
         username = inputUtils.getCleanString(request.form["username"])
         password = inputUtils.getCleanString(request.form["password"])
+        location = inputUtils.getCleanString(request.form["location"])
 
         scrapingController = ScrapingController()
-        return scrapingController.scrapGithubUsersRepositoriesSkills(username, password)
+        return scrapingController.scrapGithubUsersRepositoriesSkills(username, password, location)
 
     except ValueError as e:
         return 'Failed to scrapGithubUsersRepositoriesSkills {0}'.format(e)

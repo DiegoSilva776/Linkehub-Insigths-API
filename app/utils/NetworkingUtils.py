@@ -200,9 +200,24 @@ class NetworkingUtils():
                 print("The maximum number of requests to the Github API has been exceeded for all instances of the service, we'll resume the process soon ...")
 
                 while i < self.constUtils.TIMEOUT_REQUEST_GITHUB_API:
-                    i += 1
                     time.sleep(1)
-                    print("We'll still have to wait {0} ...".format(self.constUtils.TIMEOUT_REQUEST_GITHUB_API - i))
+
+                    if i == 0:
+                        print("We'll still have to wait {0} seconds until the next request:".format(self.constUtils.TIMEOUT_REQUEST_GITHUB_API - i))
+
+                    elif i < self.constUtils.TIMEOUT_REQUEST_GITHUB_API:
+                        print(".", end="")
+
+                        if (self.constUtils.TIMEOUT_REQUEST_GITHUB_API / i) == 2:
+                            print("\nWe are half way there, we still have to wait {0} seconds".format(i))
+                            
+                        elif (self.constUtils.TIMEOUT_REQUEST_GITHUB_API / i) == 3:
+                            print("\nHang on a little bit more, we still have to wait {0} seconds".format(i))
+
+                        else:
+                            print(".", end="") 
+
+                    i += 1
 
                 self.updateListRemainingRequestsGithubAPI()
                 self.waitRequestGithubApiIfNeeded()

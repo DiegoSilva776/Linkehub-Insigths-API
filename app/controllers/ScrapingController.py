@@ -30,8 +30,7 @@ class ScrapingController():
 
         self.idxNextInstance = 0
         self.locations = [
-            "sao paulo",
-            "rio de janeiro"
+            "rio de janeiro",
             "berlin",
             "london",
             "new york",
@@ -45,7 +44,8 @@ class ScrapingController():
             "porto alegre",
             "curitiba",
             "fortaleza",
-            "recife"
+            "recife",
+            "sao paulo"
         ]
 
     ## ------------- ##
@@ -119,8 +119,7 @@ class ScrapingController():
                         except Exception as e:
                             print("{0} Failed to process a Github user profile: {1}".format(self.TAG, e))
 
-                        # Wait a little bit until the next request
-                        time.sleep(0.5)
+                    print("{0} Done!".format(self.TAG))
 
                     # Fetch a successful response
                     response["success"] = True
@@ -139,7 +138,7 @@ class ScrapingController():
     '''
         Scrap repositories and skills of Github users from a location
     '''
-    def scrapGithubUsersRepositoriesSkills(self, username, password):
+    def scrapGithubUsersRepositoriesSkills(self, username, password, location):
         response = {
             "success" : False,
             "msg" : "Failed to scrap the repositories and skills of Github users from a location",
@@ -154,86 +153,83 @@ class ScrapingController():
             if not username or not password:
                 response["msg"] = "{0}. {1}".format(response["msg"], "Invalid input parameters.")
             else:
-                
                 # Make a request to the Linkehub database and return all the Github user ids from a location
-                for location in self.locations:
-                    token = self.authController.login(username, password)
+                token = self.authController.login(username, password)
 
-                    if token != "":
-                        print("\nRequesting repositories and skills of Github users from : {0} ...".format(location))
-                        self.netUtils.updateListRemainingRequestsGithubAPI()
+                if token != "":
+                    print("\nRequesting repositories and skills of Github users from : {0} ...".format(location))
+                    self.netUtils.updateListRemainingRequestsGithubAPI()
 
-                        try:
-                            # Request a list of userIds from the service Database
-                            userIds = self.getGithubUserIdsFromLocation(token, location)
+                    try:
+                        # Request a list of userIds from the service Database
+                        userIds = self.getGithubUserIdsFromLocation(token, location)
 
-                            # Request the list of repositories and skills associated to a Github user
-                            for githubUserId in userIds:
+                        # Request the list of repositories and skills associated to a Github user
+                        for githubUserId in userIds:
 
-                                try:
-                                    # Hold the process until we have more requests, if needed
-                                    self.netUtils.waitRequestGithubApiIfNeeded()
-                                    apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
+                            try:
+                                # Hold the process until we have more requests, if needed
+                                self.netUtils.waitRequestGithubApiIfNeeded()
+                                apiInstance = self.netUtils.getInstanceForRequestToGithubAPI()
 
-                                    print("Number of remaining requests to the Github API: {0}".format(self.netUtils.getNumRemaningRequestToGithub()))
-                                        
-                                    if apiInstance.remainingCallsGithub > 0:
+                                print("{0} Number of remaining requests to the Github API: {1}".format(
+                                    self.logger.get_utc_iso_timestamp(),
+                                    self.netUtils.getNumRemaningRequestToGithub()))
 
-                                        # This endpoint requests the repositories from the Github API, process the response and 
-                                        # stores the list of repos and skills in the service Database
-                                        connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
-                                        headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
-                                        endpoint = "/scrap_user_repositories_skils_from_github/?githubUserId={0}".format(
-                                            urllib.parse.quote(githubUserId)
-                                        )
-                                        connection.request("GET", endpoint, headers=headers)
+                                if apiInstance.remainingCallsGithub > 0:
+                                    # This endpoint requests the repositories from the Github API, process the response and 
+                                    # stores the list of repos and skills in the service Database
+                                    connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+                                    headers = self.netUtils.getRequestHeaders(self.constUtils.HEADERS_TYPE_AUTH_TOKEN, token)
+                                    endpoint = "/scrap_user_repositories_skils_from_github/?githubUserId={0}".format(
+                                        urllib.parse.quote(githubUserId)
+                                    )
+                                    connection.request("GET", endpoint, headers=headers)
 
-                                        print("\nGET repositories and skills of the Github user: {0}".format(githubUserId))
-                                        print("url: {0}{1}".format(apiInstance.getBaseUrl(), endpoint))
+                                    print("\nGET repositories and skills of the Github user: {0}".format(githubUserId))
+                                    print("url: {0}{1}".format(apiInstance.getBaseUrl(), endpoint))
 
-                                        res = connection.getresponse()
-                                        data = res.read()
-                                        githubUserReposSkillsResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
+                                    res = connection.getresponse()
+                                    data = res.read()
+                                    githubUserReposSkillsResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
 
-                                        apiInstance.remainingCallsGithub -= 1
+                                    apiInstance.remainingCallsGithub -= 1
 
-                                        # Process the response
-                                        if githubUserReposSkillsResponse is not None:
+                                    # Process the response
+                                    if githubUserReposSkillsResponse is not None:
 
-                                            if "success" in githubUserReposSkillsResponse:
+                                        if "success" in githubUserReposSkillsResponse:
 
-                                                if not githubUserReposSkillsResponse["success"]:
-                                                    response["num_fails"] += 1
+                                            if not githubUserReposSkillsResponse["success"]:
+                                                response["num_fails"] += 1
 
-                                                    if "msg" in githubUserReposSkillsResponse:
-                                                        print(githubUserReposSkillsResponse["msg"])
+                                                if "msg" in githubUserReposSkillsResponse:
+                                                    print(githubUserReposSkillsResponse["msg"])
 
-                                                    else:
-                                                        response["num_fails"] += 1
                                                 else:
                                                     response["num_fails"] += 1
-                                            else:
-                                                response["num_fails"] += 1
+
                                         else:
                                             response["num_fails"] += 1
+                                    else:
+                                        response["num_fails"] += 1
 
-                                except Exception as e:
-                                    print("{0} Failed to process the repositories and skills of the user: {1} \ncause: {2}".format(self.TAG, githubUserId, e))
+                            except Exception as e:
+                                print("{0} Failed to process the repositories and skills of the user: {1} \ncause: {2}".format(self.TAG, githubUserId, e))
 
-                                # Wait a little bit until the next request
-                                time.sleep(0.5)
+                        print("{0} Done!".format(self.TAG))
 
-                        except Exception as e:
-                            print("{0} Failed to process the list of repositories and skills of Github users from: {1} \ncause:{2}".format(self.TAG, location, e))
+                    except Exception as e:
+                        print("{0} Failed to process the list of repositories and skills of Github users from: {1} \ncause:{2}".format(self.TAG, location, e))
 
-                    else:
-                        response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
+                else:
+                    response["msg"] = "{0}. {1}".format(response["msg"], "Wrong username or password.")
 
-                # Fetch a successful response
-                response["success"] = True
-                response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
-                response["instances"] = self.netUtils.getSerializableApiInstances()
-                response["finished_at"] = self.logger.get_utc_iso_timestamp()
+            # Fetch a successful response
+            response["success"] = True
+            response["msg"] = "The script scrapGithubUsersRepositoriesSkills executed correctly"
+            response["instances"] = self.netUtils.getSerializableApiInstances()
+            response["finished_at"] = self.logger.get_utc_iso_timestamp()
 
         except ValueError as e:
             print("{0} Failed to scrapGithubUsersRepositoriesSkills: {1}".format(self.TAG, e))
