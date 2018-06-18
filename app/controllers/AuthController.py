@@ -11,6 +11,7 @@ sys.path.append('../')
 
 from utils.NetworkingUtils import NetworkingUtils
 from utils.ConstantUtils import ConstantUtils
+from persistence.DBController import DBManager
 
 '''
     Control the authentication flow of this service with the authentication micro-service
@@ -22,6 +23,7 @@ class AuthController():
 
         self.constUtils = ConstantUtils()
         self.netUtils = NetworkingUtils()
+        self.dbManager = DBManager()
 
     '''
         Return a valid token to make requests to the service API Database

@@ -122,35 +122,42 @@ class NetworkingUtils():
     '''
     def updateListRemainingRequestsGithubAPI(self):
         try:
-            # Identify the number of remaining requests to the Github API for each instance of the API
             print("\nVerify the number of remaining requests to the Github API for all instances: \n")
+            
+            # Identify the number of remaining requests to the Github API for each instance of the API
+            if self.apiInstances is not None:
 
-            for apiInstance in self.apiInstances:
-                # Make a request to the Github API and verify if the limit of requests per hour has been exceeded
-                connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
-                headers = self.getRequestHeaders(self.constUtils.HEADERS_TYPE_NO_AUTH_TOKEN, None)
-                endpoint = "/has_expired_requests_per_hour_github/"
-                connection.request("GET", endpoint, headers=headers)
+                for apiInstance in self.apiInstances:
 
-                res = connection.getresponse()
-                data = res.read()
-                githubApiResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
+                    try:
+                        # Make a request to the Github API and verify if the limit of requests per hour has been exceeded
+                        connection = http.client.HTTPSConnection(apiInstance.getBaseUrl())
+                        headers = self.getRequestHeaders(self.constUtils.HEADERS_TYPE_NO_AUTH_TOKEN, None)
+                        endpoint = "/has_expired_requests_per_hour_github/"
+                        connection.request("GET", endpoint, headers=headers)
 
-                # Process the response
-                if githubApiResponse is not None:
-                                
-                    if "usage" in githubApiResponse:
-                        usage = githubApiResponse["usage"]
+                        res = connection.getresponse()
+                        data = res.read()
+                        githubApiResponse = json.loads(data.decode(self.constUtils.UTF8_DECODER))
 
-                        if "remaining" in usage:
-                            apiInstance.remainingCallsGithub = usage["remaining"]
+                        # Process the response
+                        if githubApiResponse is not None:
+                                        
+                            if "usage" in githubApiResponse:
+                                usage = githubApiResponse["usage"]
 
-                print("{0} : {1}".format(apiInstance.getUrl(), apiInstance.remainingCallsGithub))
+                                if "remaining" in usage:
+                                    apiInstance.remainingCallsGithub = usage["remaining"]
 
-            print("Total number available requests : {0}".format(self.getNumRemaningRequestToGithub()))
+                    except Exception:
+                        print("{0} Failed to connect to a host ...".format(self.TAG))
 
-        except Exception as e:
-            print("{0} Failed to updateListRemainingRequestsGithubAPI: {1}".format(self.TAG, e))
+                    print("{0} : {1}".format(apiInstance.getUrl(), apiInstance.remainingCallsGithub))
+
+                print("Total number available requests : {0}".format(self.getNumRemaningRequestToGithub()))
+
+        except ValueError as err2:
+            print("{0} Failed to updateListRemainingRequestsGithubAPI: {1}".format(self.TAG, err2))
 
     '''
         Returns the sum of the remaning requests to the Github API of each instance of the service
@@ -197,23 +204,19 @@ class NetworkingUtils():
 
             if numRequestsGithubApi == 0:
                 i = 0
-                print("The maximum number of requests to the Github API has been exceeded for all instances of the service, we'll resume the process soon ...")
+                print("\nThe maximum number of requests to the Github API has been exceeded for all instances of the service")
 
                 while i < self.constUtils.TIMEOUT_REQUEST_GITHUB_API:
                     time.sleep(1)
 
                     if i == 0:
-                        print("We'll still have to wait {0} seconds until the next request:".format(self.constUtils.TIMEOUT_REQUEST_GITHUB_API - i))
+                        print("\nYou'll have to wait {0} minutes until the next request:".format((self.constUtils.TIMEOUT_REQUEST_GITHUB_API - i) / 60))
 
                     elif i < self.constUtils.TIMEOUT_REQUEST_GITHUB_API:
-                        print(".", end="")
 
                         if (self.constUtils.TIMEOUT_REQUEST_GITHUB_API / i) == 2:
-                            print("\nWe are half way there, we still have to wait {0} seconds".format(i))
+                            print("\nWe are half way there, we still have to wait {0} minutes".format((self.constUtils.TIMEOUT_REQUEST_GITHUB_API - i) / 60))
                             
-                        elif (self.constUtils.TIMEOUT_REQUEST_GITHUB_API / i) == 3:
-                            print("\nHang on a little bit more, we still have to wait {0} seconds".format(i))
-
                         else:
                             print(".", end="") 
 

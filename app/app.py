@@ -8,6 +8,7 @@ from werkzeug.serving import WSGIRequestHandler
 
 from controllers.DeploymentController import DeploymentController
 from controllers.ScrapingController import ScrapingController
+from controllers.AnalysisController import AnalysisController
 from utils.InputUtils import InputUtils
 from utils.NetworkingUtils import NetworkingUtils
 
@@ -19,6 +20,7 @@ app = Flask(__name__)
 def hello():
     return 'Linkehub API Manager'
 
+# Routing: Deployment
 @app.route("/deploy_n_copies_root_instance", methods=["POST"])
 def deployNCopiesRootInstance():
     try:
@@ -31,6 +33,7 @@ def deployNCopiesRootInstance():
     except ValueError as e:
         return 'Failed to deployNCopiesRootInstance {0}'.format(e)
 
+# Routing: Data Scraping
 @app.route("/scrap_github_profiles_from_location", methods=["POST"])
 def scrapGithubProfilesFromLocation():
     try:
@@ -78,6 +81,21 @@ def scrapCommitsCodeSamplesGithubUsersFromLocation():
 
     except ValueError as e:
         return 'Failed to scrapCommitsCodeSamplesGithubUsersFromLocation {0}'.format(e)
+
+# Routing: Data Analysis
+@app.route("/lra_github_success_skills_all_users", methods=["POST"])
+def lRAGithubSuccessSkillsAllUsersLocation():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+
+        analysisController = AnalysisController()
+        return analysisController.lRAGithubSuccessSkillsAllUsers_1(username, password)
+
+    except ValueError as e:
+        return 'Failed to lRAGithubSuccessSkillsAllUsers_1 {0}'.format(e)
 
 '''
     Initilization
