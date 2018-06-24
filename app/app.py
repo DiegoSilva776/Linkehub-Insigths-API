@@ -9,6 +9,7 @@ from werkzeug.serving import WSGIRequestHandler
 from controllers.DeploymentController import DeploymentController
 from controllers.ScrapingController import ScrapingController
 from controllers.AnalysisController import AnalysisController
+from controllers.TransformationController import TransformationController
 from utils.InputUtils import InputUtils
 from utils.NetworkingUtils import NetworkingUtils
 
@@ -82,7 +83,79 @@ def scrapCommitsCodeSamplesGithubUsersFromLocation():
     except ValueError as e:
         return 'Failed to scrapCommitsCodeSamplesGithubUsersFromLocation {0}'.format(e)
 
+# Routing: Transformations
+@app.route("/transformation_append_timestamp_latest_repos_skills", methods=["POST"])
+def transformAppendTimestampLatestReposSkills():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+
+        transformationController = TransformationController()
+        return transformationController.transformAppendTimestampLatestReposSkills(username, password)
+
+    except ValueError as e:
+        return 'Failed to transformAppendTimestampLatestReposSkills {0}'.format(e)
+
+@app.route("/transformation_remove_all_keys_with_pattern_github_profile_skills", methods=["POST"])
+def removeAllKeysWithPatternFrom():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+        pattern = inputUtils.getCleanString(request.form["pattern"])
+
+        transformationController = TransformationController()
+        return transformationController.removeAllKeysWithPatternFrom(username, password, pattern)
+
+    except ValueError as e:
+        return 'Failed to removeAllKeysWithPatternFrom {0}'.format(e)
+
 # Routing: Data Analysis
+@app.route("/describe_correlations_dataset_github_profiles_skills_location", methods=["POST"])
+def describeCorrelationsDatasetGithubProfilesSkills():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+
+        analysisController = AnalysisController()
+        return analysisController.describeCorrelationsDatasetGithubProfilesSkills(username, password)
+
+    except ValueError as e:
+        return 'Failed to describeCorrelationsDatasetGithubProfilesSkills {0}'.format(e)
+
+@app.route("/describe_stats_dataset_github_profiles_skills", methods=["POST"])
+def describeStatsDatasetGithubProfilesSkills():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+
+        analysisController = AnalysisController()
+        return analysisController.describeStatsDatasetGithubProfilesSkills(username, password)
+
+    except ValueError as e:
+        return 'Failed to describeStatsDatasetGithubProfilesSkills {0}'.format(e)
+
+@app.route("/insights_dataset_github_profiles_skills", methods=["POST"])
+def describeStatsDatasetGithubProfilesSkillsInsights():
+    try:
+        inputUtils = InputUtils()
+
+        username = inputUtils.getCleanString(request.form["username"])
+        password = inputUtils.getCleanString(request.form["password"])
+
+        analysisController = AnalysisController()
+        return analysisController.describeStatsDatasetGithubProfilesSkillsInsights(username, password)
+
+    except ValueError as e:
+        return 'Failed to describeStatsDatasetGithubProfilesSkillsInsights {0}'.format(e)
+
 @app.route("/lra_github_success_skills_all_users", methods=["POST"])
 def lRAGithubSuccessSkillsAllUsersLocation():
     try:
@@ -92,10 +165,10 @@ def lRAGithubSuccessSkillsAllUsersLocation():
         password = inputUtils.getCleanString(request.form["password"])
 
         analysisController = AnalysisController()
-        return analysisController.lRAGithubSuccessSkillsAllUsers_1(username, password)
+        return analysisController.lRAGithubSuccessSkillsAllUsers(username, password)
 
     except ValueError as e:
-        return 'Failed to lRAGithubSuccessSkillsAllUsers_1 {0}'.format(e)
+        return 'Failed to lRAGithubSuccessSkillsAllUsers {0}'.format(e)
 
 '''
     Initilization
