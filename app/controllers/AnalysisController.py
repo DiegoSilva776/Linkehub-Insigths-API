@@ -471,6 +471,7 @@ class AnalysisController():
                 if token != "":
                     dataset, moreDetailsDatasetRows = self.getDataframeLRAGithubSuccessSkillsAllUsers(token)
                     dataframe = pd.DataFrame.from_records(dataset)
+                    dataframe.fillna(0)
 
                     print(dataframe.head())
 

@@ -32,4 +32,4 @@ class ConstantUtils:
         # Metrics
         self.NUM_STARS_SUCCESSFUL_REPO = 1
         self.NUM_FORKS_SUCCESSFUL_REPO = 1
-        self.NUM_WATCHERS_SUCCESSFUL_REPO = 1
+        self.NUM_WATCHERS_SUCCESSFUL_REPO = 2

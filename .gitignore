@@ -1,0 +1,11 @@
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+venv
+*.pyc
+
+# Project
+app/config/
