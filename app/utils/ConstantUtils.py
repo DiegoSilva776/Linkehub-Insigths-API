@@ -28,3 +28,8 @@ class ConstantUtils:
         self.HEADERS_TYPE_AUTH_TOKEN = 1
         self.HEADERS_TYPE_URL_ENCODED = 2
         self.HEADERS_TYPE_NO_AUTH_TOKEN = 3
+
+        # Metrics
+        self.NUM_STARS_SUCCESSFUL_REPO = 1
+        self.NUM_FORKS_SUCCESSFUL_REPO = 1
+        self.NUM_WATCHERS_SUCCESSFUL_REPO = 1
