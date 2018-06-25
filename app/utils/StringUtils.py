@@ -19,6 +19,7 @@ class StringUtils():
                     rawJsonValue = rawJsonValue.replace("[","_|333|_")
                     rawJsonValue = rawJsonValue.replace("]","_|444|_")
                     rawJsonValue = rawJsonValue.replace(".","_|555|_")
+                    rawJsonValue = rawJsonValue.replace(": ","_|666|_")
 
         except Exception as e:
             print("StringUtils: Failed to getCleanedJsonValue: {0} ".format(e))

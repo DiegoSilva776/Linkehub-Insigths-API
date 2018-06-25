@@ -23,7 +23,7 @@ class DBManager():
             self.logger = Logger()
             
             dirname = os.path.dirname(__file__)
-            configFileName = os.path.join(dirname, '../config/linkehub-api-firebase.json')
+            configFileName = os.path.join(dirname, '../config/linked-dev-api-firebase.json')
 
             with open(configFileName) as json_data:
                 self.firebase = pyrebase.initialize_app(json.load(json_data))
@@ -40,15 +40,34 @@ class DBManager():
         githubProfilesSkills = []
 
         try:
-            db = self.firebase.database()
-            baseUrlGithubProfiles = db.child("github_profile_skills_location")
-            profiles = baseUrlGithubProfiles.get()
+            baseUrlGithubProfiles = {}
+            profiles = []
+            dirname = os.path.dirname(__file__)
+            configFileName = os.path.join(dirname, '../config/linkehub-api-export-test.json')
 
-            for profileSkills in profiles.each():
+            with open(configFileName) as json_data:
+                baseUrlGithubProfiles = json.load(json_data)
+
+                if 'github_profile_skills_location' in baseUrlGithubProfiles:
+                    profiles = baseUrlGithubProfiles['github_profile_skills_location']
+
+            for profileKey in profiles.keys():
+
+                if profileKey in profiles:
+
+                    if profiles[profileKey] is not None:
+                        githubProfilesSkills.append(profiles[profileKey])
+
+            '''
+            db = self.firebase.database()
+            githubProfilesSkillsFromDB = db.child("github_profile_skills_location").get()
+
+            for profileSkills in githubProfilesSkillsFromDB.each():
                 dbObject = profileSkills.val()
 
                 if dbObject is not None:
                     githubProfilesSkills.append(dbObject)
+            '''
 
         except  Exception as e:
             print("Failed to getListGithubUsersSkills: {0}".format(e))

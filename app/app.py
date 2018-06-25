@@ -156,19 +156,19 @@ def describeStatsDatasetGithubProfilesSkillsInsights():
     except ValueError as e:
         return 'Failed to describeStatsDatasetGithubProfilesSkillsInsights {0}'.format(e)
 
-@app.route("/lra_github_success_skills_all_users", methods=["POST"])
-def lRAGithubSuccessSkillsAllUsersLocation():
-    try:
-        inputUtils = InputUtils()
+@app.route("/predict_github_skill_trends_worldwide", methods=["POST"])
+def predictGithubSkillTrendsWorldwide():
+    #try:
+    inputUtils = InputUtils()
 
-        username = inputUtils.getCleanString(request.form["username"])
-        password = inputUtils.getCleanString(request.form["password"])
+    username = inputUtils.getCleanString(request.form["username"])
+    password = inputUtils.getCleanString(request.form["password"])
 
-        analysisController = AnalysisController()
-        return analysisController.lRAGithubSuccessSkillsAllUsers(username, password)
+    analysisController = AnalysisController()
+    return analysisController.predictGithubSkillTrendsWorldwide(username, password)
 
-    except ValueError as e:
-        return 'Failed to lRAGithubSuccessSkillsAllUsers {0}'.format(e)
+    #except ValueError as e:
+    #    return 'Failed to predictGithubSkillTrendsWorldwide {0}'.format(e)
 
 '''
     Initilization

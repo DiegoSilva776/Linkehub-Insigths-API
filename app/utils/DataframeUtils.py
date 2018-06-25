@@ -9,6 +9,7 @@ class DataframeUtils():
 
     def __init__(self):
         self.TAG = "DataframeUtils"
+        self.makeDatasetResultGB = lambda x: x.tail(len(x))
 
     '''
         Ensure that a valid list of columns are going to be passed to the drop function on Pandas
