@@ -170,6 +170,21 @@ def predictGithubSkillTrendsWorldwide():
     #except ValueError as e:
     #    return 'Failed to predictGithubSkillTrendsWorldwide {0}'.format(e)
 
+
+@app.route("/cluster_users_skills_location", methods=["POST"])
+def clusterUsersSkillsLocation():
+    #try:
+    inputUtils = InputUtils()
+
+    username = inputUtils.getCleanString(request.form["username"])
+    password = inputUtils.getCleanString(request.form["password"])
+
+    analysisController = AnalysisController()
+    return analysisController.clusterUsersSkillsLocation(username, password)
+
+    #except ValueError as e:
+    #    return 'Failed to clusterUsersSkillsLocation {0}'.format(e)
+
 '''
     Initilization
 '''

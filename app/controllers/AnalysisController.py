@@ -24,6 +24,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn import ensemble
+from sklearn.cluster import KMeans
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
@@ -466,6 +467,105 @@ class AnalysisController():
     ##############
     ## Analysis ##
     ##############
+    def clusterUsersSkillsLocation(self, username, password):
+        '''
+        response = {
+            "status" : False,
+            "msg" : "Failed to predict trends"
+        }
+
+        interestingSkills = [
+            "Java",
+            "Python",
+            "JavaScript",
+            "TypeScript",
+            "Kotlin",
+            "Objective-C",
+            "Swift",
+            "C++",
+            "Ruby",
+            "C_|222|_",
+            "Clojure",
+            "Elixir",
+            "Go",
+            "Scala",
+            "PHP",
+            "Eagle",
+            "Erlang",
+            "Haskell",
+            "Lua",
+            "PLSQL",
+            "R"
+        ]
+
+        try:
+
+        if not username or not password:
+            response["msg"] = "Invalid access token, please login and try again."
+
+        else:
+            #token = self.authController.login(username, password)
+            token = "mudar depois dos testes"
+
+            if token != "":
+                dataset, _ = self.getDataframeLRAGithubSuccessSkillsAllUsers(token)
+                skillsDataFrame = pd.DataFrame.from_records(dataset)
+
+                # Extract and store information about the tech skills available in the platform
+                skills = self.getSkillsFromDBKeys(list(skillsDataFrame.columns))
+                #self.dbManager.updateListTechSkillsPlatform(token, skills)
+
+                # Descriptive statistics of the dataset grouped by interesting attributes x skill
+                toDropInput = []
+
+                for skill in skills.keys():
+
+                    if skill != "Java":
+                        toDropInput.append("lang_x_forks_max_{0}".format(skill))
+                        toDropInput.append("lang_x_forks_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_forks_sum_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_max_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_sum_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_max_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_sum_{0}".format(skill))
+                        toDropInput.append("latest_pushed_at_{0}".format(skill))
+                        toDropInput.append("latest_updated_at_{0}".format(skill))
+                        toDropInput.append("latest_created_at_{0}".format(skill))
+                        toDropInput.append("latest_size_{0}".format(skill))
+                        toDropInput.append("num_repos_skill_{0}".format(skill))
+                        toDropInput.append("github_userid")
+                        toDropInput.append("strong_repo")
+                        toDropInput.append("location")
+                        toDropInput.append("latest_updated_smnr")
+                        toDropInput.append("max_num_forks_smnr")
+                        toDropInput.append("max_num_stars_smnr")
+                        toDropInput.append("max_num_watchers_smnr")
+                        toDropInput.append("smnr_was_max_forks")
+                        toDropInput.append("smnr_was_max_stars")
+                        toDropInput.append("smnr_was_max_watchers")
+                        toDropInput.append("strong_language")
+                        toDropInput.append("latest_pushed_smnr")
+                        toDropInput.append("latest_size_smnr")
+                        toDropInput.append("num_repos_smnr")
+                        toDropInput.append("was_smrn_repo_relatively_successful")
+
+                toDrop = self.dataFrameUtils.getColumnsToDrop(skillsDataFrame, toDropInput)
+                skillsDataFrame.drop(toDrop, inplace=True, axis=1)
+                skillsDataFrame.dropna(inplace=True)
+
+                print(skillsDataFrame.head())
+
+                
+
+                kmeans = KMeans(n_clusters=2, random_state=0)
+                kmeans.fit(skillsDataFrame)
+                print(kmeans.labels_)
+                print(kmeans.cluster_centers_)
+        '''
+        
+
     '''
         H1 - Dada uma série com o número de repositórios criados por mês em uma linguagem, qual será o possível número de 
         repositórios criados na mesma linguagem no próximo mês?
@@ -500,160 +600,160 @@ class AnalysisController():
             "R"
         ]
 
-        #try:
+        try:
 
-        if not username or not password:
-            response["msg"] = "Invalid access token, please login and try again."
+            if not username or not password:
+                response["msg"] = "Invalid access token, please login and try again."
 
-        else:
-            #token = self.authController.login(username, password)
-            token = "mudar depois dos testes"
+            else:
+                #token = self.authController.login(username, password)
+                token = "mudar depois dos testes"
 
-            if token != "":
-                dataset, _ = self.getDataframeLRAGithubSuccessSkillsAllUsers(token)
-                skillsDataFrame = pd.DataFrame.from_records(dataset)
+                if token != "":
+                    dataset, _ = self.getDataframeLRAGithubSuccessSkillsAllUsers(token)
+                    skillsDataFrame = pd.DataFrame.from_records(dataset)
 
-                # Extract and store information about the tech skills available in the platform
-                skills = self.getSkillsFromDBKeys(list(skillsDataFrame.columns))
-                #self.dbManager.updateListTechSkillsPlatform(token, skills)
+                    # Extract and store information about the tech skills available in the platform
+                    skills = self.getSkillsFromDBKeys(list(skillsDataFrame.columns))
+                    #self.dbManager.updateListTechSkillsPlatform(token, skills)
 
-                # Descriptive statistics of the dataset grouped by interesting attributes x skill
-                toDropInput = []
+                    # Descriptive statistics of the dataset grouped by interesting attributes x skill
+                    toDropInput = []
 
-                for skill in skills.keys():
-                    toDropInput.append("lang_x_forks_max_{0}".format(skill))
-                    toDropInput.append("lang_x_forks_mean_{0}".format(skill))
-                    toDropInput.append("lang_x_forks_sum_{0}".format(skill))
-                    toDropInput.append("lang_x_stargazers_max_{0}".format(skill))
-                    toDropInput.append("lang_x_stargazers_mean_{0}".format(skill))
-                    toDropInput.append("lang_x_stargazers_sum_{0}".format(skill))
-                    toDropInput.append("lang_x_watchers_max_{0}".format(skill))
-                    toDropInput.append("lang_x_watchers_mean_{0}".format(skill))
-                    toDropInput.append("lang_x_watchers_sum_{0}".format(skill))
-                    toDropInput.append("latest_pushed_at_{0}".format(skill))
-                    toDropInput.append("latest_updated_at_{0}".format(skill))
-                    toDropInput.append("latest_size_{0}".format(skill))
-                    toDropInput.append("num_repos_skill_{0}".format(skill))
-                    toDropInput.append("github_userid")
-                    toDropInput.append("strong_repo")
-                    toDropInput.append("latest_updated_smnr")
-                    toDropInput.append("location")
-                    toDropInput.append("max_num_forks_smnr")
-                    toDropInput.append("max_num_stars_smnr")
-                    toDropInput.append("max_num_watchers_smnr")
-                    toDropInput.append("smnr_was_max_forks")
-                    toDropInput.append("smnr_was_max_stars")
-                    toDropInput.append("smnr_was_max_watchers")
-                    toDropInput.append("strong_language")
-                    toDropInput.append("latest_pushed_smnr")
-                    toDropInput.append("latest_size_smnr")
-                    toDropInput.append("num_repos_smnr")
-                    toDropInput.append("was_smrn_repo_relatively_successful")
+                    for skill in skills.keys():
+                        toDropInput.append("lang_x_forks_max_{0}".format(skill))
+                        toDropInput.append("lang_x_forks_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_forks_sum_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_max_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_stargazers_sum_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_max_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_mean_{0}".format(skill))
+                        toDropInput.append("lang_x_watchers_sum_{0}".format(skill))
+                        toDropInput.append("latest_pushed_at_{0}".format(skill))
+                        toDropInput.append("latest_updated_at_{0}".format(skill))
+                        toDropInput.append("latest_size_{0}".format(skill))
+                        toDropInput.append("num_repos_skill_{0}".format(skill))
+                        toDropInput.append("github_userid")
+                        toDropInput.append("strong_repo")
+                        toDropInput.append("latest_updated_smnr")
+                        toDropInput.append("location")
+                        toDropInput.append("max_num_forks_smnr")
+                        toDropInput.append("max_num_stars_smnr")
+                        toDropInput.append("max_num_watchers_smnr")
+                        toDropInput.append("smnr_was_max_forks")
+                        toDropInput.append("smnr_was_max_stars")
+                        toDropInput.append("smnr_was_max_watchers")
+                        toDropInput.append("strong_language")
+                        toDropInput.append("latest_pushed_smnr")
+                        toDropInput.append("latest_size_smnr")
+                        toDropInput.append("num_repos_smnr")
+                        toDropInput.append("was_smrn_repo_relatively_successful")
 
-                toDrop = self.dataFrameUtils.getColumnsToDrop(skillsDataFrame, toDropInput)
-                skillsDataFrame.drop(toDrop, inplace=True, axis=1)
+                    toDrop = self.dataFrameUtils.getColumnsToDrop(skillsDataFrame, toDropInput)
+                    skillsDataFrame.drop(toDrop, inplace=True, axis=1)
 
-                for skill in interestingSkills:
-                    keyTSSkill = "latest_created_at_{0}".format(skill)
+                    for skill in interestingSkills:
+                        keyTSSkill = "latest_created_at_{0}".format(skill)
 
-                    if pd.Series(keyTSSkill).isin(skillsDataFrame.columns).all():
-                        skillTSDateTime = skillsDataFrame[keyTSSkill]
-                        skillTSDateTime.dropna(inplace=True)
+                        if pd.Series(keyTSSkill).isin(skillsDataFrame.columns).all():
+                            skillTSDateTime = skillsDataFrame[keyTSSkill]
+                            skillTSDateTime.dropna(inplace=True)
 
-                        # Build a dataset grouped by year
-                        skillTSYear = skillTSDateTime.map(lambda x: time.strftime('%Y', time.localtime(x))).sort_values(ascending=True)
+                            # Build a dataset grouped by year
+                            skillTSYear = skillTSDateTime.map(lambda x: time.strftime('%Y', time.localtime(x))).sort_values(ascending=True)
 
-                        if skillTSYear is not None:
+                            if skillTSYear is not None:
 
-                            if len(skillTSYear) > 1:
-                                df1 = skillTSYear.to_frame(name='year')
-                                df1.set_index('year')
-                                df1['num_created'] = 1
+                                if len(skillTSYear) > 1:
+                                    df1 = skillTSYear.to_frame(name='year')
+                                    df1.set_index('year')
+                                    df1['num_created'] = 1
 
-                                groupNumProjectsYear = df1.groupby('year')['num_created'].count().transform(self.dataFrameUtils.makeDatasetResultGB)
-                                years = self.getGroupByLabelsAsSeries(groupNumProjectsYear)
-                                nextYear = int(years.values[-1]) + 1
+                                    groupNumProjectsYear = df1.groupby('year')['num_created'].count().transform(self.dataFrameUtils.makeDatasetResultGB)
+                                    years = self.getGroupByLabelsAsSeries(groupNumProjectsYear)
+                                    nextYear = int(years.values[-1]) + 1
 
-                                if len(years) > 3:
+                                    if len(years) > 3:
 
-                                    # Linear Regression
-                                    rmseLR, seriesWithPredictionLR, predictedValueLR = self.linearRegression(years, groupNumProjectsYear.values, nextYear)
-                                    plotNameLR = self.plotSeriesWithLegend(
-                                        years,
-                                        groupNumProjectsYear.values,
-                                        seriesWithPredictionLR,
-                                        "images/gpsl_predict_lr_x_{0}.png".format(skill), 
-                                        "Actual values", 
-                                        "Predictions", 
-                                        "Number projects created with the skill", 
-                                        "Years",
-                                        "Linear Regression"
-                                    )
+                                        # Linear Regression
+                                        rmseLR, seriesWithPredictionLR, predictedValueLR = self.linearRegression(years, groupNumProjectsYear.values, nextYear)
+                                        plotNameLR = self.plotSeriesWithLegend(
+                                            years,
+                                            groupNumProjectsYear.values,
+                                            seriesWithPredictionLR,
+                                            "images/gpsl_predict_lr_x_{0}.png".format(skill), 
+                                            "Actual values", 
+                                            "Predictions", 
+                                            "Number projects created with the skill", 
+                                            "Years",
+                                            "Linear Regression"
+                                        )
 
-                                    response["pred_lr_{0}_rmse".format(keyTSSkill)] = rmseLR
-                                    response["pred_lr_{0}_time_series".format(keyTSSkill)] = years.tolist()
-                                    response["pred_lr_{0}_actual_vals".format(keyTSSkill)] = groupNumProjectsYear.tolist()
-                                    response["pred_lr_{0}_predictions".format(keyTSSkill)] = seriesWithPredictionLR.tolist()
-                                    response["pred_lr_{0}_next_predicted_value".format(keyTSSkill)] = predictedValueLR
-                                    response["pred_lr_{0}_path_pred_plot".format(keyTSSkill)] = plotNameLR
+                                        response["pred_lr_{0}_rmse".format(keyTSSkill)] = rmseLR
+                                        response["pred_lr_{0}_time_series".format(keyTSSkill)] = years.tolist()
+                                        response["pred_lr_{0}_actual_vals".format(keyTSSkill)] = groupNumProjectsYear.tolist()
+                                        response["pred_lr_{0}_predictions".format(keyTSSkill)] = seriesWithPredictionLR.tolist()
+                                        response["pred_lr_{0}_next_predicted_value".format(keyTSSkill)] = predictedValueLR
+                                        response["pred_lr_{0}_path_pred_plot".format(keyTSSkill)] = plotNameLR
 
-                                    # Regression with SVR
-                                    rmseSvr, seriesWithPredictionSvr, predictedValueSvr = self.svrRegression(years, groupNumProjectsYear.values, nextYear)
-                                    plotNameSvr = self.plotSeriesWithLegend(
-                                        years,
-                                        groupNumProjectsYear.values,
-                                        seriesWithPredictionSvr,
-                                        "images/gpsl_predict_svr_x_{0}.png".format(skill), 
-                                        "Actual values", 
-                                        "Predictions", 
-                                        "Number projects created with the skill", 
-                                        "Years",
-                                        "Support Vector Regression"
-                                    )
+                                        # Regression with SVR
+                                        rmseSvr, seriesWithPredictionSvr, predictedValueSvr = self.svrRegression(years, groupNumProjectsYear.values, nextYear)
+                                        plotNameSvr = self.plotSeriesWithLegend(
+                                            years,
+                                            groupNumProjectsYear.values,
+                                            seriesWithPredictionSvr,
+                                            "images/gpsl_predict_svr_x_{0}.png".format(skill), 
+                                            "Actual values", 
+                                            "Predictions", 
+                                            "Number projects created with the skill", 
+                                            "Years",
+                                            "Support Vector Regression"
+                                        )
 
-                                    response["pred_svr_{0}_rmse".format(keyTSSkill)] = rmseSvr
-                                    response["pred_svr_{0}_time_series".format(keyTSSkill)] = years.tolist()
-                                    response["pred_svr_{0}_actual_vals".format(keyTSSkill)] = groupNumProjectsYear.tolist()
-                                    response["pred_svr_{0}_predictions".format(keyTSSkill)] = seriesWithPredictionSvr.tolist()
-                                    response["pred_svr_{0}_next_predicted_value".format(keyTSSkill)] = predictedValueSvr
-                                    response["pred_svr_{0}_path_pred_plot".format(keyTSSkill)] = plotNameSvr
+                                        response["pred_svr_{0}_rmse".format(keyTSSkill)] = rmseSvr
+                                        response["pred_svr_{0}_time_series".format(keyTSSkill)] = years.tolist()
+                                        response["pred_svr_{0}_actual_vals".format(keyTSSkill)] = groupNumProjectsYear.tolist()
+                                        response["pred_svr_{0}_predictions".format(keyTSSkill)] = seriesWithPredictionSvr.tolist()
+                                        response["pred_svr_{0}_next_predicted_value".format(keyTSSkill)] = predictedValueSvr
+                                        response["pred_svr_{0}_path_pred_plot".format(keyTSSkill)] = plotNameSvr
 
-                                # Build a dataset grouped by month
-                                skillTSMonth = skillTSDateTime.map(lambda x: time.strftime('%Y-%m', time.localtime(x))).sort_values(ascending=True)
+                                    # Build a dataset grouped by month
+                                    skillTSMonth = skillTSDateTime.map(lambda x: time.strftime('%Y-%m', time.localtime(x))).sort_values(ascending=True)
 
-                                df2 = skillTSMonth.to_frame(name='month')
-                                df2.set_index('month')
-                                df2['num_created'] = 1
+                                    df2 = skillTSMonth.to_frame(name='month')
+                                    df2.set_index('month')
+                                    df2['num_created'] = 1
 
-                                groupNumProjectsMonth = df2.groupby('month')['num_created'].count().transform(self.dataFrameUtils.makeDatasetResultGB)
+                                    groupNumProjectsMonth = df2.groupby('month')['num_created'].count().transform(self.dataFrameUtils.makeDatasetResultGB)
 
-                                if len(groupNumProjectsMonth.values) > 6:
+                                    if len(groupNumProjectsMonth.values) > 6:
 
-                                    # Regression with Long Short-Term Memory Network - LSTM
-                                    rmseLstm, actualValuesLstm, predictionsLstm = self.regressionLstm(groupNumProjectsMonth.values, keyTSSkill, 1)
-                                    actualValuesLstm = actualValuesLstm[:-1]
-                                    plotNameLstm = "images/gpsl_predict_lstm_x_{0}.png".format(skill)
+                                        # Regression with Long Short-Term Memory Network - LSTM
+                                        rmseLstm, actualValuesLstm, predictionsLstm = self.regressionLstm(groupNumProjectsMonth.values, keyTSSkill, 1)
+                                        actualValuesLstm = actualValuesLstm[:-1]
+                                        plotNameLstm = "images/gpsl_predict_lstm_x_{0}.png".format(skill)
 
-                                    plt.clf()
-                                    plt.plot(actualValuesLstm, label="Actual values")
-                                    plt.plot(predictionsLstm, label="Predictions")
-                                    plt.title("Long Short-Term Memory Network - LSTM")
-                                    plt.legend(loc='upper left')
-                                    plt.ylabel("Number projects created with the skill")
-                                    plt.xlabel("Months")
-                                    plt.savefig(plotNameLstm)
+                                        plt.clf()
+                                        plt.plot(actualValuesLstm, label="Actual values")
+                                        plt.plot(predictionsLstm, label="Predictions")
+                                        plt.title("Long Short-Term Memory Network - LSTM")
+                                        plt.legend(loc='upper left')
+                                        plt.ylabel("Number projects created with the skill")
+                                        plt.xlabel("Months")
+                                        plt.savefig(plotNameLstm)
 
-                                    response["pred_lstm_{0}_rmse".format(keyTSSkill)] = rmseLstm
-                                    response["pred_lstm_{0}_path_pred_plot".format(keyTSSkill)] = plotNameLstm
-                                    response["pred_lstm_{0}_actual_vals".format(keyTSSkill)] = actualValuesLstm
-                                    response["pred_lstm_{0}_predictions".format(keyTSSkill)] = predictionsLstm
+                                        response["pred_lstm_{0}_rmse".format(keyTSSkill)] = rmseLstm
+                                        response["pred_lstm_{0}_path_pred_plot".format(keyTSSkill)] = plotNameLstm
+                                        response["pred_lstm_{0}_actual_vals".format(keyTSSkill)] = actualValuesLstm
+                                        response["pred_lstm_{0}_predictions".format(keyTSSkill)] = predictionsLstm
 
-                    # N - Fetch a successful response to the user
-                    response["status"] = True
-                    response["msg"] = "We found your data!"
+                        # N - Fetch a successful response to the user
+                        response["status"] = True
+                        response["msg"] = "We found your data!"
 
-        #except ValueError as ve:
-        #    print("{0} Failed to lRAGithubSuccessSkillsAllUsers: {1}".format(self.TAG, ve))
+        except ValueError as ve:
+            print("{0} Failed to lRAGithubSuccessSkillsAllUsers: {1}".format(self.TAG, ve))
 
         return json.dumps(response)
 
